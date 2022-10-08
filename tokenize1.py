@@ -1,8 +1,3 @@
-import tkinter as tk
-from tkinter import Grid, ttk
-from tkinter.font import NORMAL
-from tkinter.messagebox import showerror
-from tkinter.tix import COLUMN
 from cgi import test
 from collections import namedtuple
 from lib2to3.pgen2 import token
@@ -19,7 +14,6 @@ functions = {
     'o' : "cot",
     'l' : "log",
     'n' : "ln",
-    '±' : "±",
 }
 
 precedence = {
@@ -30,19 +24,13 @@ precedence = {
  '-': 2,
  '(': 9,
  ')': 0,
- 'sin':0,
- 'cos':0,
- 'tan':0,
- 'cot':0,
- 'log':0,
- 'ln':0,
- '±':8,
+ 'sin':0
  }
 
 
+tokenized = []
 
 def tokenize(equ):
-    tokenized = []
     equ = equ.replace('sin', 's')
     equ = equ.replace('cos', 'c')
     equ = equ.replace('tan', 't')
@@ -54,7 +42,7 @@ def tokenize(equ):
     for i in range(len(equ)):
         #print(token)
         c = str(equ[i])
-        #print(c)
+        print(c)
         #if c == '-':
         #    print(next.isdigit())
         #    if next.isdigit():
@@ -75,7 +63,6 @@ def tokenize(equ):
             token = ''
     if (token != ''):
         tokenized.append(token)
-    return tokenized
 
 def testFloat(t):
     try : 
@@ -127,7 +114,6 @@ def shuntingyard(tokens):
     while peek(opstack) is not None:
         operator = opstack.pop()
         queue.append(operator)
-    print(queue)
     return queue
 
 
@@ -141,6 +127,7 @@ def eval_postfix(tokens):
         
         if token.strip() == '':
             continue 
+
         elif token == "+":
             stack.append(stack.pop() + stack.pop())
 
@@ -167,28 +154,22 @@ def eval_postfix(tokens):
         elif token == 'tan':
             stack.append(math.tan(stack.pop()))
         
-        elif token == '±':
-            stack.append(stack.pop() * -1 )
-        
         elif token == 'log':
             stack.append(math.log10(stack.pop()))
-        
-        elif token == 'ln':
-            stack.append(math.log(stack.pop()))
 
         elif token == '/':
             op2 = stack.pop()
             if op2 != 0.0:
                 stack.append(stack.pop() / op2)
             else:
-                raise ValueError("Divide by zero error")
+                raise ValueError("division by zero found!")
 
         elif (str(token).isnumeric or testFloat(token) ):
                 stack.append(float(token))
 
         else:
-            raise ValueError("Unknown token {0}".format(token))
-        print(stack)
+            raise ValueError("unknown token {0}".format(token))
+        #print(stack)
     if len(stack) > 1:
         raise Exception("Invalid format of equation")
     else:
@@ -201,7 +182,7 @@ def eval_postfix(tokens):
 #equation3 = "31 + 34"
 
 #for i in tokenized:
-    #print(i, end =" ")
+    print(i, end =" ")
 #print("")
 
 #postfix = shuntingyard(tokenized)
@@ -210,110 +191,11 @@ def eval_postfix(tokens):
 
 
 def calculate():
-    if equation.get() != '':
-        tokenized = tokenize(equation.get())
-        print(tokenized)
-        answer = eval_postfix(shuntingyard(tokenized))
-        #print(answer)
-        equation.delete(0, "end")
-        equation.insert(0, answer)
-
-# Setup
-root = tk.Tk()
-root.title('Calculator')
-root.resizable(False, False)
-style = ttk.Style()
-style.theme_use("clam")
-
-# Create equeation entry box
-equation = ttk.Entry(root, width=54)#, state="readonly")
-equation.grid(row=0, column=0, columnspan=7, padx=10, pady=10)
+    tokenize(equation.get())
+    eval_postfix(shuntingyard(tokenized))
+    answer = str(eval(equation.get()))
+    #print(answer)
+    equation.delete(0, "end")
+    equation.insert(0, answer)
 
 
-# Detect the return key as "="
-def equals(event):
-    #print("You hit return.")
-    #equation.configure(state=NORMAL)
-    calculate()
-    #equation.configure(state="readonly")
-root.bind('<Return>', equals)
-
-
-# Handleing tkinter button clicks
-def buttonClick(str):
-    #print(str)
-    #equation.configure(state=NORMAL)
-    if str == 'C':
-        equation.delete(0,"end")
-    elif str == '⌫':
-        temp = equation.get()[:-1]
-        equation.delete(0, "end")
-        equation.insert(0, temp)
-    elif str == '=':
-        calculate()
-    else :
-        equation.insert("end", str)
-    #equation.configure(state="readonly")
-
-
-
-
-def addButton(value):
-    return ttk.Button(root, text=value, width=6, command=lambda: buttonClick(str(value)),)
-b0 = addButton(0)
-b1 = addButton(1)
-b2 = addButton(2)
-b3 = addButton(3)
-b4 = addButton(4)
-b5 = addButton(5)
-b6 = addButton(6)
-b7 = addButton(7)
-b8 = addButton(8)
-b9 =  addButton(9)
-b_add = addButton('+')
-b_sub = addButton('-')
-b_neg = addButton('±')
-b_backspace = addButton('⌫')
-b_mult = addButton('*')
-b_div = addButton('/')
-b_exp = addButton('^')
-b_sin = ttk.Button(root, text="sin()", width=6, command=lambda: buttonClick(str("sin(")),)
-b_cos = ttk.Button(root, text="cos()", width=6, command=lambda: buttonClick(str("cos(")),)
-b_tan = ttk.Button(root, text="tan()", width=6, command=lambda: buttonClick(str("tan(")),)
-b_cot = ttk.Button(root, text="cot()", width=6, command=lambda: buttonClick(str("cot(")),)
-b_ln = ttk.Button(root, text="ln()", width=6, command=lambda: buttonClick(str("ln(")),)
-b_log = ttk.Button(root, text="log()", width=6, command=lambda: buttonClick(str("log(")),)
-b_paran1 = addButton('(')
-b_paran2 = addButton(')')
-b_brack1 = addButton('{')
-b_brack2 = addButton('}')
-b_point = addButton('.')
-b_clear = addButton('C')
-b_empty = addButton('')
-b_equal = ttk.Button(root, text="=", width=15, command=lambda: buttonClick(str("=")),)
-row1 = [b_paran2,b_sin,b_cos,b_backspace,b7,b8,b9,b_add]
-row2 = [b_paran1, b_cot, b_tan,b_point,b4,b5,b6,b_sub]
-row3 = [b_brack1, b_log, b_exp,b_neg, b1,b2,b3,b_mult]
-row4 = [b_brack2, b_ln, b_clear,b_empty,b0,b_equal,b_div]
-
-r = 2
-for row in [row1, row2, row3, row4]:
-    c = 0
-    for button in row:
-        button.grid(row=r, column=c, columnspan=1)
-        c += 1
-    r += 1
-
-b_equal.grid_configure(columnspan=2,)
-b_div.grid_configure(column=7)
-
-
-# any name as accepted but not signature
-def report_callback_exception(self, exc, val, tb):
-    showerror("Error", message=str(val))
-
-tk.Tk.report_callback_exception = report_callback_exception
-# now method is overridden
-
-# start the app
-root.mainloop()
