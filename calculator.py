@@ -1,17 +1,10 @@
 import tkinter as tk
-from tkinter import Grid, ttk
-from tkinter.font import NORMAL
+from tkinter import ttk
 from tkinter.messagebox import showerror
-from tkinter.tix import COLUMN
-from cgi import test
-from collections import namedtuple
-from lib2to3.pgen2 import token
 import math
 
-OpInfo = namedtuple('OpInfo', 'prec assoc')
-L, R = 'Left Right'.split()
-
 operators = ['+','-','*','/','^','(',')']
+operators2 = ['+','-','~','*','/','^','(']
 functions = {
     's' : "sin",
     'c' : "cos",
@@ -19,7 +12,7 @@ functions = {
     'o' : "cot",
     'l' : "log",
     'n' : "ln",
-    '±' : "±",
+    '~' : "~",
 }
 
 precedence = {
@@ -36,10 +29,20 @@ precedence = {
  'cot':0,
  'log':0,
  'ln':0,
- '±':8,
+ '~':8,
  }
 
 
+
+def convertUnaryMinus(tokenized):
+    for i in (range(len(tokenized))):
+        if i == 0 and tokenized[i] == '-':
+            tokenized[i] = "~"
+        else:
+            if tokenized[i] == '-':
+                if tokenized[i-1] in operators2:
+                    tokenized[i] = "~"
+    return tokenized
 
 def tokenize(equ):
     tokenized = []
@@ -49,16 +52,13 @@ def tokenize(equ):
     equ = equ.replace('cot', 'o')
     equ = equ.replace('log', 'l')
     equ = equ.replace('ln', 'n')
+    equ = equ.replace('}', ')')
+    equ = equ.replace('{', '(')
     print(equ)
     token = ''
     for i in range(len(equ)):
         #print(token)
         c = str(equ[i])
-        #print(c)
-        #if c == '-':
-        #    print(next.isdigit())
-        #    if next.isdigit():
-        #       token += c
         if c.isdigit():
             token += c
         elif c == '.':
@@ -90,14 +90,13 @@ def peek(stack):
 def greater_precedence(op1, op2):
     return precedence.get(op1) > precedence.get(op2)
 
+
+# Shunting Yard Algorithm
+# Adapted from https://rosettacode.org/wiki/Parsing/Shunting-yard_algorithm#Python
 def shuntingyard(tokens):
     queue = []
     opstack = []
     for t in tokens:
-        #print(queue)
-        #print(opstack)
-        #print(t)
-        
         if str(t).isnumeric():
             queue.append(t)
         elif testFloat(t):
@@ -131,14 +130,11 @@ def shuntingyard(tokens):
     return queue
 
 
-
+# Postfix notation evaluator
+# Adapted from https://stackoverflow.com/questions/30067163/evaluating-postfix-in-python
 def eval_postfix(tokens):
-
     stack = []
-
     for token in tokens:
-        #print(token)
-        
         if token.strip() == '':
             continue 
         elif token == "+":
@@ -149,8 +145,6 @@ def eval_postfix(tokens):
             stack.append(stack.pop() - op2)
 
         elif token == '^':
-            #print(stack[0])
-            #print(stack[1])
             power = stack.pop()
             base = stack.pop()
             stack.append(pow(base, power))
@@ -167,7 +161,7 @@ def eval_postfix(tokens):
         elif token == 'tan':
             stack.append(math.tan(stack.pop()))
         
-        elif token == '±':
+        elif token == '~':
             stack.append(stack.pop() * -1 )
         
         elif token == 'log':
@@ -213,10 +207,16 @@ def calculate():
     if equation.get() != '':
         tokenized = tokenize(equation.get())
         print(tokenized)
+        tokenized = convertUnaryMinus(tokenized)
+        print(tokenized)
         answer = eval_postfix(shuntingyard(tokenized))
-        #print(answer)
+        if (float(answer).is_integer()):
+            print(answer)
+            answer = int(answer)
+        #equation.configure(state=NORMAL)
         equation.delete(0, "end")
         equation.insert(0, answer)
+        #equation.configure(state="readonly")
 
 # Setup
 root = tk.Tk()
@@ -233,9 +233,9 @@ equation.grid(row=0, column=0, columnspan=7, padx=10, pady=10)
 # Detect the return key as "="
 def equals(event):
     #print("You hit return.")
-    #equation.configure(state=NORMAL)
+    
     calculate()
-    #equation.configure(state="readonly")
+
 root.bind('<Return>', equals)
 
 
@@ -257,7 +257,8 @@ def buttonClick(str):
 
 
 
-
+# Creating Tkinter UI
+# Adapted from https://pyshark.com/basic-gui-calculator-in-python/
 def addButton(value):
     return ttk.Button(root, text=value, width=6, command=lambda: buttonClick(str(value)),)
 b0 = addButton(0)
@@ -272,7 +273,7 @@ b8 = addButton(8)
 b9 =  addButton(9)
 b_add = addButton('+')
 b_sub = addButton('-')
-b_neg = addButton('±')
+b_neg = ttk.Button(root, text="±", width=6, command=lambda: buttonClick(str("-")),)
 b_backspace = addButton('⌫')
 b_mult = addButton('*')
 b_div = addButton('/')
@@ -311,6 +312,7 @@ b_div.grid_configure(column=7)
 # any name as accepted but not signature
 def report_callback_exception(self, exc, val, tb):
     showerror("Error", message=str(val))
+    #equation.configure(state="readonly")
 
 tk.Tk.report_callback_exception = report_callback_exception
 # now method is overridden
