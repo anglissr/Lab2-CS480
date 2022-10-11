@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
+from tkinter.font import NORMAL
 from tkinter.messagebox import showerror
 import math
 
@@ -14,7 +15,6 @@ functions = {
     'n' : "ln",
     '~' : "~",
 }
-
 precedence = {
  '^': 4,
  '*': 3,
@@ -34,16 +34,23 @@ precedence = {
 
 
 
+# Function that iterates over the user submitted equation in tokenized form and converts all unary minus signs to a "~"
+# so they can be more easily evaluated later
 def convertUnaryMinus(tokenized):
     for i in (range(len(tokenized))):
+        # Unary minus if it is at the begginning...
         if i == 0 and tokenized[i] == '-':
             tokenized[i] = "~"
         else:
+            # or if it is after an operator
             if tokenized[i] == '-':
                 if tokenized[i-1] in operators2:
                     tokenized[i] = "~"
     return tokenized
 
+
+
+# Tokenize a user submitted equation. Returns a list with each unique operator/value
 def tokenize(equ):
     tokenized = []
     equ = equ.replace('sin', 's')
@@ -54,7 +61,7 @@ def tokenize(equ):
     equ = equ.replace('ln', 'n')
     equ = equ.replace('}', ')')
     equ = equ.replace('{', '(')
-    print(equ)
+    #print(equ)
     token = ''
     for i in range(len(equ)):
         #print(token)
@@ -77,19 +84,25 @@ def tokenize(equ):
         tokenized.append(token)
     return tokenized
 
+
+
+# Shunting Yard helper functions
+# Test is a value is a float
 def testFloat(t):
     try : 
         float(t)
         return True
-    except :    
+    except :
+         
         return False
 
+# "Peek" function implemented for a python list
 def peek(stack):
     return stack[-1] if stack else None
 
+# Function that helps determine which out of two operaters has a higher precedence
 def greater_precedence(op1, op2):
     return precedence.get(op1) > precedence.get(op2)
-
 
 # Shunting Yard Algorithm
 # Adapted from https://rosettacode.org/wiki/Parsing/Shunting-yard_algorithm#Python
@@ -118,6 +131,7 @@ def shuntingyard(tokens):
                 queue.append(operator)
         elif t in operators:
             top = peek(opstack)
+            print(top)
             while top is not None and top not in "()" and greater_precedence(top, t):
                 operator = opstack.pop()
                 queue.append(operator)
@@ -139,86 +153,62 @@ def eval_postfix(tokens):
             continue 
         elif token == "+":
             stack.append(stack.pop() + stack.pop())
-
         elif token == "-":
             op2 = stack.pop() 
             stack.append(stack.pop() - op2)
-
         elif token == '^':
             power = stack.pop()
             base = stack.pop()
             stack.append(pow(base, power))
-
         elif token == '*':
             stack.append(stack.pop() * stack.pop())
-
         elif token == 'sin':
             stack.append(math.sin(stack.pop()))
-        
         elif token == 'cos':
             stack.append(math.cos(stack.pop()))
-
         elif token == 'tan':
             stack.append(math.tan(stack.pop()))
-        
         elif token == '~':
             stack.append(stack.pop() * -1 )
-        
         elif token == 'log':
             stack.append(math.log10(stack.pop()))
-        
         elif token == 'ln':
             stack.append(math.log(stack.pop()))
-
         elif token == '/':
             op2 = stack.pop()
-            if op2 != 0.0:
+            if op2 != 0.0: # Catch divide by zero errors
                 stack.append(stack.pop() / op2)
             else:
                 raise ValueError("Divide by zero error")
-
-        elif (str(token).isnumeric or testFloat(token) ):
+        elif (str(token).isnumeric() or testFloat(token)):
                 stack.append(float(token))
-
         else:
             raise ValueError("Unknown token {0}".format(token))
-        print(stack)
+        #print(stack)
+        
     if len(stack) > 1:
         raise Exception("Invalid format of equation")
     else:
         return stack.pop()
 
 
-#equation1 = "-5.78+-(4-2.23)+sin(0) *cos (1)/(1+tan(2*ln(-3+2*(1.23+99.111))"
-#equation = "200 cos(1-3)"
-#equation2 = "3+4 + sin( 2^3 + 3 )"
-#equation3 = "31 + 34"
-
-#for i in tokenized:
-    #print(i, end =" ")
-#print("")
-
-#postfix = shuntingyard(tokenized)
-#print(postfix)
-#print(eval_postfix(postfix))
-
-
+# Main Calculation function
+# Tokenizes equations, runs shunting yard and evaluation, and outputs to the gui
 def calculate():
     if equation.get() != '':
-        tokenized = tokenize(equation.get())
-        print(tokenized)
-        tokenized = convertUnaryMinus(tokenized)
-        print(tokenized)
+        tokenized = convertUnaryMinus(tokenize(equation.get()))
         answer = eval_postfix(shuntingyard(tokenized))
         if (float(answer).is_integer()):
             print(answer)
             answer = int(answer)
-        #equation.configure(state=NORMAL)
+        equation.configure(state=NORMAL)
         equation.delete(0, "end")
         equation.insert(0, answer)
-        #equation.configure(state="readonly")
+        equation.configure(state="readonly")
 
-# Setup
+
+
+# Tkinter Setup
 root = tk.Tk()
 root.title('Calculator')
 root.resizable(False, False)
@@ -226,23 +216,17 @@ style = ttk.Style()
 style.theme_use("clam")
 
 # Create equeation entry box
-equation = ttk.Entry(root, width=54)#, state="readonly")
+equation = ttk.Entry(root, width=54, state="readonly")
 equation.grid(row=0, column=0, columnspan=7, padx=10, pady=10)
-
 
 # Detect the return key as "="
 def equals(event):
-    #print("You hit return.")
-    
     calculate()
-
 root.bind('<Return>', equals)
-
 
 # Handleing tkinter button clicks
 def buttonClick(str):
-    #print(str)
-    #equation.configure(state=NORMAL)
+    equation.configure(state=NORMAL)
     if str == 'C':
         equation.delete(0,"end")
     elif str == '⌫':
@@ -253,9 +237,7 @@ def buttonClick(str):
         calculate()
     else :
         equation.insert("end", str)
-    #equation.configure(state="readonly")
-
-
+    equation.configure(state="readonly")
 
 # Creating Tkinter UI
 # Adapted from https://pyshark.com/basic-gui-calculator-in-python/
@@ -273,7 +255,6 @@ b8 = addButton(8)
 b9 =  addButton(9)
 b_add = addButton('+')
 b_sub = addButton('-')
-b_neg = ttk.Button(root, text="±", width=6, command=lambda: buttonClick(str("-")),)
 b_backspace = addButton('⌫')
 b_mult = addButton('*')
 b_div = addButton('/')
@@ -291,12 +272,14 @@ b_brack2 = addButton('}')
 b_point = addButton('.')
 b_clear = addButton('C')
 b_empty = addButton('')
+b_empty1 = addButton('')
 b_equal = ttk.Button(root, text="=", width=15, command=lambda: buttonClick(str("=")),)
 row1 = [b_paran2,b_sin,b_cos,b_backspace,b7,b8,b9,b_add]
 row2 = [b_paran1, b_cot, b_tan,b_point,b4,b5,b6,b_sub]
-row3 = [b_brack1, b_log, b_exp,b_neg, b1,b2,b3,b_mult]
-row4 = [b_brack2, b_ln, b_clear,b_empty,b0,b_equal,b_div]
+row3 = [b_brack1, b_empty1,b_log, b_exp, b1,b2,b3,b_mult]
+row4 = [b_brack2, b_empty,b_ln, b_clear,b0,b_equal,b_div]
 
+# Button layout
 r = 2
 for row in [row1, row2, row3, row4]:
     c = 0
@@ -304,18 +287,22 @@ for row in [row1, row2, row3, row4]:
         button.grid(row=r, column=c, columnspan=1)
         c += 1
     r += 1
-
-b_equal.grid_configure(columnspan=2,)
+b_equal.grid_configure(columnspan=2)
 b_div.grid_configure(column=7)
 
 
-# any name as accepted but not signature
-def report_callback_exception(self, exc, val, tb):
-    showerror("Error", message=str(val))
-    #equation.configure(state="readonly")
 
+# Tkinter error handling and error popup gui
+def report_callback_exception(self, exc, val, tb):
+    if str(val) == "pop from empty list":
+        showerror("Error", message="Invalid format of equation")
+    else:
+       showerror("Error", message=str(val)) 
+    print(str(val))
+    equation.configure(state="readonly")
 tk.Tk.report_callback_exception = report_callback_exception
-# now method is overridden
+
+
 
 # start the app
 root.mainloop()
