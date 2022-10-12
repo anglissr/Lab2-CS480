@@ -3,6 +3,7 @@ from tkinter import ttk
 from tkinter.font import NORMAL
 from tkinter.messagebox import showerror
 import math
+import webbrowser
 
 operators = ['+','-','*','/','^','(',')']
 operators2 = ['+','-','~','*','/','^','(']
@@ -291,6 +292,11 @@ b_equal.grid_configure(columnspan=2)
 b_div.grid_configure(column=7)
 
 
+def callback(url):
+   webbrowser.open_new_tab(url)
+link = tk.Label(root, text="https://github.com/anglissr/Lab2-CS480",font=('Helvetica', 8), fg="black", cursor="hand2")
+link.grid(row=6, column=0, columnspan=4)
+link.bind("<Button-1>", lambda e: callback("https://github.com/anglissr/Lab2-CS480"))
 
 # Tkinter error handling and error popup gui
 def report_callback_exception(self, exc, val, tb):
