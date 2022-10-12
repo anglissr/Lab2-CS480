@@ -62,7 +62,6 @@ def tokenize(equ):
     equ = equ.replace('ln', 'n')
     equ = equ.replace('}', ')')
     equ = equ.replace('{', '(')
-    print(equ)
     token = ''
     for i in range(len(equ)):
         #print(token)
@@ -83,7 +82,6 @@ def tokenize(equ):
             token = ''
     if (token != ''):
         tokenized.append(token)
-    print(tokenized)
     return tokenized
 
 
@@ -133,7 +131,6 @@ def shuntingyard(tokens):
                 queue.append(operator)
         elif t in operators:
             top = peek(opstack)
-            print(top)
             while top is not None and top not in "()" and greater_precedence(top, t):
                 operator = opstack.pop()
                 queue.append(operator)
@@ -142,7 +139,6 @@ def shuntingyard(tokens):
     while peek(opstack) is not None:
         operator = opstack.pop()
         queue.append(operator)
-    print(queue)
     return queue
 
 
@@ -186,7 +182,6 @@ def eval_postfix(tokens):
                 stack.append(float(token))
         else:
             raise ValueError("Unknown token {0}".format(token))
-        print(stack)
         
     if len(stack) > 1:
         raise Exception("Invalid format of equation")
@@ -201,7 +196,6 @@ def calculate():
         tokenized = convertUnaryMinus(tokenize(equation.get()))
         answer = eval_postfix(shuntingyard(tokenized))
         if (float(answer).is_integer()):
-            print(answer)
             answer = int(answer)
         equation.configure(state=NORMAL)
         equation.delete(0, "end")
@@ -305,7 +299,6 @@ def report_callback_exception(self, exc, val, tb):
         showerror("Error", message="Invalid format of equation")
     else:
        showerror("Error", message=str(val)) 
-    print(str(val))
     equation.configure(state="readonly")
 tk.Tk.report_callback_exception = report_callback_exception
 
