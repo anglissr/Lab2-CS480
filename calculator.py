@@ -62,7 +62,7 @@ def tokenize(equ):
     equ = equ.replace('ln', 'n')
     equ = equ.replace('}', ')')
     equ = equ.replace('{', '(')
-    #print(equ)
+    print(equ)
     token = ''
     for i in range(len(equ)):
         #print(token)
@@ -83,6 +83,7 @@ def tokenize(equ):
             token = ''
     if (token != ''):
         tokenized.append(token)
+    print(tokenized)
     return tokenized
 
 
@@ -185,7 +186,7 @@ def eval_postfix(tokens):
                 stack.append(float(token))
         else:
             raise ValueError("Unknown token {0}".format(token))
-        #print(stack)
+        print(stack)
         
     if len(stack) > 1:
         raise Exception("Invalid format of equation")
@@ -291,10 +292,10 @@ for row in [row1, row2, row3, row4]:
 b_equal.grid_configure(columnspan=2)
 b_div.grid_configure(column=7)
 
-
+# Github link
 def callback(url):
    webbrowser.open_new_tab(url)
-link = tk.Label(root, text="https://github.com/anglissr/Lab2-CS480",font=('Helvetica', 8), fg="black", cursor="hand2")
+link = tk.Label(root, text="https://github.com/anglissr/Lab2-CS480", fg="black", cursor="hand2")
 link.grid(row=6, column=0, columnspan=4)
 link.bind("<Button-1>", lambda e: callback("https://github.com/anglissr/Lab2-CS480"))
 
@@ -307,7 +308,6 @@ def report_callback_exception(self, exc, val, tb):
     print(str(val))
     equation.configure(state="readonly")
 tk.Tk.report_callback_exception = report_callback_exception
-
 
 
 # start the app
