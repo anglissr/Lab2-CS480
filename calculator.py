@@ -71,6 +71,7 @@ def createTokenizedList(equation):
     # Add the last token to the list, if any
     if (token != ''):
         tokenList.append(token)
+    print(tokenList)
     return tokenList
 
 
@@ -88,7 +89,7 @@ def convertMinusSigns(tokenList):
             # or if it is after an operator
             if tokenList[i] == '-':
                 if tokenList[i-1] in unaryNegationOperators:
-                    tokenList[i-1] = "~"
+                    tokenList[i] = "~"
     return tokenList
 
 
@@ -118,9 +119,12 @@ def greaterPrecedence(op1, op2):
 def shuntingYardAlgorithm(tokenList):
     s = []
     q = []
-
+    
+    print(q)
     # Iterate over each token of the equation
     for t in tokenList:
+        print(s)
+        print(t)
         # add integers to the queue
         if str(t).isnumeric():
             q.append(t)
@@ -154,6 +158,7 @@ def shuntingYardAlgorithm(tokenList):
     while peek(s) is not None:
         operator = s.pop()
         q.append(operator)
+    print(q)
     return q
 
 
