@@ -1,25 +1,19 @@
 # Ryan Angliss
 # Lab 2 CS 480
 import tkinter as tk
+import tkinter.font as font
 from tkinter import ttk
-from tkinter.font import NORMAL
 from tkinter.messagebox import showerror
+from tkinter.font import NORMAL
+
 import math
 
 # List of all possible operators/symbols
 operators = ['+','-','*','/','^','(',')']
+# List of all functions
+functions =["sin","cos","tan","cot","log","ln","~"]
 # List of all symbols that may come before a unary negation
-operators2 = ['+','-','~','*','/','^','(']
-# List of all functions with shortened symbol (one letter)
-functions = {
-    's' : "sin",
-    'c' : "cos",
-    't' : "tan",
-    'o' : "cot",
-    'l' : "log",
-    'n' : "ln",
-    '~' : "~",
-}
+unaryNegationOperators = ['+','-','~','*','/','^','(']
 # Precedence map for shunting yard algoritm
 precedence = {
  '^': 4,
@@ -40,56 +34,62 @@ precedence = {
 
 
 
-# Function that iterates over the user submitted equation in tokenized form and converts all unary minus signs to a "~"
-# so they can be more easily evaluated later
-# Returns an edited list of all tokens
-def convertUnaryMinus(tokens):
-    for i in (range(len(tokens))):
-        # Unary minus if it is at the begginning...
-        if i == 0 and tokens[i] == '-':
-            tokens[i] = "~"
-        else:
-            # or if it is after an operator
-            if tokens[i] == '-':
-                if tokens[i-1] in operators2:
-                    tokens[i] = "~"
-    return tokens
-
-
-
-# Tokenize a user submitted equation. Returns a list with each unique operator/value
-# Returns a list of all tokens in the given string equation
-def tokenize(equ):
-    tokenized = []
-    equ = equ.replace('sin', 's')
-    equ = equ.replace('cos', 'c')
-    equ = equ.replace('tan', 't')
-    equ = equ.replace('cot', 'o')
-    equ = equ.replace('log', 'l')
-    equ = equ.replace('ln', 'n')
-    equ = equ.replace('}', ')')
-    equ = equ.replace('{', '(')
+# Tokenize a given string that reresents an equation
+#
+# Input: a user created mathmatical equation as a str
+# Returns: a tokenized list that represents the equation
+def createTokenizedList(equation):
+    tokenList = []
     token = ''
     # Iterate over each character
-    for i in range(len(equ)):
-        c = str(equ[i])
-        if c.isdigit():
-            token += c
-        elif c == '.':
-            token += c    
-        elif c in operators:
+    for i in range(len(equation)):
+        char = str(equation[i])
+        # if the character is a digit or decimal, add it to the token
+        if char.isdigit() or char == '.':
+            token += char    
+        
+        # if the character is an operator, check if there is a token to add, then add the operator to the list
+        elif char in operators:
             if (token != ''):
-                tokenized.append(token)
-            tokenized.append(c)
+                tokenList.append(token)
+            tokenList.append(char)
             token = ''
-        elif c in functions:
-            if (token != ''):
-                tokenized.append(token)
-            tokenized.append(functions.get(c))
-            token = ''
+
+        # if the character is a letter, check if it is part of a function, then add that to the list
+        elif char.isalpha():
+            if str(equation[i:i+3]) in functions:
+                if (token != ''):
+                    tokenList.append(token)
+                tokenList.append(str(equation[i:i+3]))
+                token = ''
+            if str(equation[i:i+2]) in functions:
+                if (token != ''):
+                    tokenList.append(token)
+                tokenList.append(str(equation[i:i+2]))
+                token = ''
+
+    # Add the last token to the list, if any
     if (token != ''):
-        tokenized.append(token)
-    return tokenized
+        tokenList.append(token)
+    return tokenList
+
+
+
+# Function that iterates over the user submitted equation in tokenized form and converts all unary minus signs to a "~"
+#
+# Input: a tokenized list that represents the equation
+# Returns: a tokenized list with all unary minus signs changed to "~"
+def convertMinusSigns(tokenList):
+    for i in (range(len(tokenList))):
+        # if there is a minus sign the begginning..
+        if i == 0 and tokenList[i] == '-':
+            tokenList[i] = "~"
+        else:
+            # or if it is after an operator
+            if tokenList[i] == '-':
+                if tokenList[i-1] in unaryNegationOperators:
+                    tokenList[i-1] = "~"
+    return tokenList
 
 
 
@@ -107,128 +107,141 @@ def peek(stack):
     return stack[-1] if stack else None
 
 # Function that helps determine which out of two operaters has a higher precedence
-def greater_precedence(op1, op2):
+def greaterPrecedence(op1, op2):
     return precedence.get(op1) > precedence.get(op2)
 
 # Shunting Yard Algorithm
 # Adapted from https://rosettacode.org/wiki/Parsing/Shunting-yard_algorithm#Python
-def shuntingyard(tokens):
-    queue = []
-    opstack = []
+#
+# Input: a tokenized list that represents the equation
+# Returns: a list in postfix notation that represents the equation
+def shuntingYardAlgorithm(tokenList):
+    s = []
+    q = []
+
     # Iterate over each token of the equation
-    for t in tokens:
-        if str(t).isnumeric(): # add integers to the queue
-            queue.append(t)
-        elif testFloat(t): # add floats to the queue
-            queue.append(t)
-        elif t in functions.values(): # add functions to the stack
-            opstack.append(t)
-        elif str(t) == '(': # add open parenthesis to the stack
-            opstack.append(t)
+    for t in tokenList:
+        # add integers to the queue
+        if str(t).isnumeric():
+            q.append(t)
+        # add floats to the queue
+        elif testFloat(t): 
+            q.append(t)
+        # add functions to the stack
+        elif t in functions: 
+            s.append(t)
+        # add open parenthesis to the stack
+        elif str(t) == '(': 
+            s.append(t)
         elif t == ')':
-            top = peek(opstack)
+            top = peek(s)
             while top is not None and top != '(':
-                operator = opstack.pop()
-                queue.append(operator)
-                top = peek(opstack)
-            opstack.pop() # Discard the '('
-            top = peek(opstack)
-            if top in functions.values():
-                operator = opstack.pop()
-                queue.append(operator)
+                operator = s.pop()
+                q.append(operator)
+                top = peek(s)
+            s.pop() # Discard the '('
+            top = peek(s)
+            if top in functions:
+                operator = s.pop()
+                q.append(operator)
         elif t in operators:
-            top = peek(opstack)
-            while top is not None and top not in "()" and greater_precedence(top, t):
-                operator = opstack.pop()
-                queue.append(operator)
-                top = peek(opstack)
-            opstack.append(t)
-    while peek(opstack) is not None:
-        operator = opstack.pop()
-        queue.append(operator)
-    return queue
+            top = peek(s)
+            while top is not None and top not in "()" and greaterPrecedence(top, t):
+                operator = s.pop()
+                q.append(operator)
+                top = peek(s)
+            s.append(t)
+    while peek(s) is not None:
+        operator = s.pop()
+        q.append(operator)
+    return q
+
 
 
 # Postfix notation evaluator
 # Adapted from https://stackoverflow.com/questions/30067163/evaluating-postfix-in-python
-def eval_postfix(tokens):
-    stack = []
+#
+# Input: a list in postfix notation that represents the equation
+# Returns: 
+def evaluatePostfix(tokens):
+    s = []
     # Iterate over each token, determine how to handle operators/functions
     for t in tokens:
         if t.strip() == '':
             continue 
         elif t == "+":
-            stack.append(stack.pop() + stack.pop())
+            s.append(s.pop() + s.pop())
         elif t == "-":
-            op2 = stack.pop() 
-            stack.append(stack.pop() - op2)
+            op2 = s.pop() 
+            s.append(s.pop() - op2)
         elif t == '^':
-            power = stack.pop()
-            base = stack.pop()
-            stack.append(pow(base, power))
-        elif t == '*':
-            stack.append(stack.pop() * stack.pop())
-        elif t == 'sin':
-            stack.append(math.sin(stack.pop()))
-        elif t == 'cos':
-            stack.append(math.cos(stack.pop()))
-        elif t == 'tan':
-            stack.append(math.tan(stack.pop()))
-        elif t == 'cot':
-            stack.append(1/math.tan(stack.pop()))
-        elif t == '~':
-            stack.append(stack.pop() * -1 )
+            power = s.pop()
+            base = s.pop()
+            s.append(pow(base, power))
         elif t == 'log':
-            stack.append(math.log10(stack.pop()))
+            s.append(math.log10(s.pop()))
         elif t == 'ln':
-            stack.append(math.log(stack.pop()))
+            s.append(math.log(s.pop()))
+        elif t == '*':
+            s.append(s.pop() * s.pop())
+        elif t == 'sin':
+            s.append(math.sin(s.pop()))
+        elif t == 'cos':
+            s.append(math.cos(s.pop()))
+        elif t == 'tan':
+            s.append(math.tan(s.pop()))
+        elif t == 'cot':
+            s.append(1/math.tan(s.pop()))
+        elif t == '~':
+            s.append(s.pop() * -1 )
         elif t == '/':
-            op2 = stack.pop()
+            op2 = s.pop()
             if op2 != 0.0: # Catch divide by zero errors
-                stack.append(stack.pop() / op2)
+                s.append(s.pop() / op2)
             else:
                 raise ValueError("Divide by zero error")
         elif (str(t).isnumeric() or testFloat(t)):
-                stack.append(float(t))
+                s.append(float(t))
         else:
-            raise ValueError("Unknown token {0}".format(t))
+            raise ValueError("Unknown token error: {0}".format(t))
         
-    if len(stack) > 1:
-        raise Exception("Invalid format of equation")
+    if len(s) > 1:
+        raise Exception("Invalid equation format error")
     else:
-        return stack.pop()
+        return s.pop()
 
 
 # Main Calculation function
-# Tokenizes equations, runs shunting yard and evaluation, and outputs to the gui
 def calculate():
-    if equation.get() != '':
-        tokenized = tokenize(equation.get()) # Tokenize equation
-        tokenized = convertUnaryMinus(tokenized) # Convert unary minus signs to "~" for easier calculations
-        postfixNotation = shuntingyard(tokenized) # Run shunting-yard to get postfix notation
-        answer = eval_postfix(postfixNotation) # Evaluate postfix to get answer
+    # If field is not empty
+    if equationFeild.get() != '':
+        tokenList = createTokenizedList(equationFeild.get()) # Tokenize equation
+        tokenList = convertMinusSigns(tokenList) # Convert unary minus signs to "~" for easier calculations
+        postfix = shuntingYardAlgorithm(tokenList) # Run shunting-yard to get postfix notation
+        answer = evaluatePostfix(postfix) # Evaluate postfix to get answer
+        
         # Print integer only if the answer is an int
         if (float(answer).is_integer()):
             answer = int(answer)
 
         # Write the the equation line on gui
-        equation.configure(state=NORMAL)
-        equation.delete(0, "end")
-        equation.insert(0, answer)
-        equation.configure(state="readonly")
+        equationFeild.configure(state=NORMAL)
+        equationFeild.delete(0, "end")
+        equationFeild.insert(0, answer)
+        equationFeild.configure(state="readonly")
 
 
 
 # Tkinter Setup
 root = tk.Tk()
-root.title('Calculator')
 root.resizable(False, False)
+root.title('CS 480 Calculator')
 style = ttk.Style()
 style.theme_use("alt")
 
 # Create equation entry box
-equation = ttk.Entry(root, width=55, state="readonly")
-equation.grid(row=0, column=0, columnspan=8, padx=10, pady=10)
+equationFeild = ttk.Entry(root, width=70, state="readonly")
+equationFeild.grid(row=0, column=0, columnspan=8, padx=5, pady=5)
 
 # Detect the return key as "="
 def equals(event):
@@ -237,23 +250,25 @@ root.bind('<Return>', equals)
 
 # Handleing tkinter button clicks
 def buttonClick(str):
-    equation.configure(state=NORMAL)
+    equationFeild.configure(state=NORMAL)
     if str == 'C': # Clear
-        equation.delete(0,"end")
+        equationFeild.delete(0,"end")
     elif str == '⌫': # Backspace
-        temp = equation.get()[:-1]
-        equation.delete(0, "end")
-        equation.insert(0, temp)
+        temp = equationFeild.get()[:-1]
+        equationFeild.delete(0, "end")
+        equationFeild.insert(0, temp)
     elif str == '=': # Equals
         calculate()
     else :
-        equation.insert("end", str)
-    equation.configure(state="readonly")
+        equationFeild.insert("end", str)
+    equationFeild.configure(state="readonly")
 
 # Creating Tkinter UI
 # Adapted from https://pyshark.com/basic-gui-calculator-in-python/
+style = ttk.Style()
+style.configure("Custom.TButton",font="Arial 12",background="white")
 def addButton(value):
-    return ttk.Button(root, text=value, width=6, command=lambda: buttonClick(str(value)),)
+    return ttk.Button(root, text=value, width=6,style="Custom.TButton", command=lambda: buttonClick(str(value)),)
 b0 = addButton(0)
 b1 = addButton(1)
 b2 = addButton(2)
@@ -266,16 +281,10 @@ b8 = addButton(8)
 b9 =  addButton(9)
 b_add = addButton('+')
 b_sub = addButton('-')
-b_backspace = addButton('⌫')
+b_back = addButton('⌫')
 b_mult = addButton('*')
 b_div = addButton('/')
 b_exp = addButton('^')
-b_sin = ttk.Button(root, text="sin()", width=6, command=lambda: buttonClick(str("sin(")),)
-b_cos = ttk.Button(root, text="cos()", width=6, command=lambda: buttonClick(str("cos(")),)
-b_tan = ttk.Button(root, text="tan()", width=6, command=lambda: buttonClick(str("tan(")),)
-b_cot = ttk.Button(root, text="cot()", width=6, command=lambda: buttonClick(str("cot(")),)
-b_ln = ttk.Button(root, text="ln()", width=6, command=lambda: buttonClick(str("ln(")),)
-b_log = ttk.Button(root, text="log()", width=6, command=lambda: buttonClick(str("log(")),)
 b_paran1 = addButton('(')
 b_paran2 = addButton(')')
 b_brack1 = addButton('{')
@@ -284,13 +293,19 @@ b_point = addButton('.')
 b_clear = addButton('C')
 b_empty = addButton('')
 b_empty1 = addButton('')
-b_equal = ttk.Button(root, text="=", width=14, command=lambda: buttonClick(str("=")),)
-row1 = [b_empty1,b_sin,b_cos,b_backspace,b7,b8,b9,b_add]
-row2 = [b_empty, b_cot, b_tan,b_point,b4,b5,b6,b_sub]
-row3 = [b_paran1, b_paran2,b_log, b_exp, b1,b2,b3,b_mult]
-row4 = [b_brack1, b_brack2,b_ln, b_clear,b0,b_equal,b_div]
+b_sin = ttk.Button(root, text="sin()", width=6,style="Custom.TButton", command=lambda: buttonClick(str("sin(")),)
+b_cos = ttk.Button(root, text="cos()", width=6,style="Custom.TButton", command=lambda: buttonClick(str("cos(")),)
+b_tan = ttk.Button(root, text="tan()", width=6,style="Custom.TButton", command=lambda: buttonClick(str("tan(")),)
+b_cot = ttk.Button(root, text="cot()", width=6,style="Custom.TButton", command=lambda: buttonClick(str("cot(")),)
+b_ln = ttk.Button(root, text="ln()", width=6,style="Custom.TButton", command=lambda: buttonClick(str("ln(")),)
+b_log = ttk.Button(root, text="log()", width=6,style="Custom.TButton", command=lambda: buttonClick(str("log(")),)
+b_equal = ttk.Button(root, text="=", width=13,style="Custom.TButton", command=lambda: buttonClick(str("=")),)
 
 # Button layout
+row1 = [b_empty1,b_sin,b_cos,b_point,b7,b8,b9,b_add]
+row2 = [b_empty, b_cot, b_tan,b_exp,b4,b5,b6,b_sub]
+row3 = [b_paran1, b_paran2,b_log,b_back , b1,b2,b3,b_mult]
+row4 = [b_brack1, b_brack2,b_ln, b_clear,b_equal,b0,b_div]
 r = 2
 for row in [row1, row2, row3, row4]:
     c = 0
@@ -299,16 +314,17 @@ for row in [row1, row2, row3, row4]:
         c += 1
     r += 1
 b_equal.grid_configure(columnspan=2)
+b0.grid_configure(column=6)
 b_div.grid_configure(column=7)
 
 
 # Tkinter error handling and error popup gui
 def report_callback_exception(self, exc, val, tb):
     if str(val) == "pop from empty list":
-        showerror("Error", message="Invalid format of equation")
+        showerror("Error", message="Invalid equation format error")
     else:
        showerror("Error", message=str(val)) 
-    equation.configure(state="readonly")
+    equationFeild.configure(state="readonly")
 tk.Tk.report_callback_exception = report_callback_exception
 
 
