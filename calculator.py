@@ -174,6 +174,8 @@ def eval_postfix(tokens):
             stack.append(math.cos(stack.pop()))
         elif t == 'tan':
             stack.append(math.tan(stack.pop()))
+        elif t == 'cot':
+            stack.append(1/math.tan(stack.pop()))
         elif t == '~':
             stack.append(stack.pop() * -1 )
         elif t == 'log':
